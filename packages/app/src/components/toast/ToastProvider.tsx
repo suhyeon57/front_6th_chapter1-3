@@ -49,15 +49,18 @@ export const useToastState = () => {
 
 export const ToastProvider = memo(({ children }: PropsWithChildren) => {
   const [state, dispatch] = useReducer(toastReducer, initialState);
-  const { show, hide } = useRef(createActions(dispatch)).current; //useRef를 사용하였기 때문에 리렌더링과 무관하게 고정된 값 유지
+  const { show, hide } = useMemo(() => createActions(dispatch), [dispatch]);
   const visible = state.message !== "";
 
-  const hideAfter = debounce(hide, DEFAULT_DELAY);
+  const hideAfter = useMemo(() => debounce(hide, DEFAULT_DELAY), [hide]);
 
-  const showWithHide: ShowToast = useCallback((...args) => {
-    show(...args);
-    hideAfter();
-  }, []); //의존성 배열을 빈 배열로 설정하여 최초 렌더링 시에만 실행되도록 함
+  const showWithHide: ShowToast = useCallback(
+    (...args) => {
+      show(...args);
+      hideAfter();
+    },
+    [show, hideAfter],
+  ); //의존성 배열에 show와 hideAfter를 추가하여 변경 시에만 실행되도록 함
 
   const context = useMemo(() => ({ show: showWithHide, hide }), [showWithHide, hide]); //showWithHide와 hide가 변하지 않으므로 변하지 않음
 
